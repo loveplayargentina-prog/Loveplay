@@ -1,0 +1,8 @@
+{
+  "watch": ["backend"],
+  "ignore": [
+    "/storage/shared/Android/media",
+    "/storage/shared/WhatsApp",
+    "/storage/shared/Download"
+  ]
+}
