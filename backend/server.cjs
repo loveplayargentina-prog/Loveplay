@@ -1,12 +1,17 @@
 const express = require('express');
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+let serviceAccount;
+try {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} catch (e) {
+  console.error('❌ No se pudo leer la variable FIREBASE_SERVICE_ACCOUNT:', e);
+  process.exit(1);
+}
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 const db = admin.firestore();
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const app = express();
-app.use(cors());
+console.log('✅ Firebase inicializado correctamente en Render');
 app.use(bodyParser.json());
 
 
