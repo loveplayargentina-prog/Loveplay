@@ -1,3 +1,7 @@
+// ================================
+// 🌐 Backend LovePlay (Render + Firebase)
+// ================================
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
@@ -5,33 +9,38 @@ const path = require('path');
 
 let serviceAccount;
 
-if (process.env.FIREBASE_SERVICE_ACCOUNT && process.env.FIREBASE_SERVICE_ACCOUNT !== '') {
+// Cargar credenciales de Firebase
+if (process.env.FIREBASE_SERVICE_ACCOUNT && process.env.FIREBASE_SERVICE_ACCOUNT !== "") {
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   } catch (e) {
-    console.error("❌ No se pudo leer la variable FIREBASE_SERVICE_ACCOUNT");
+    console.error("❌ No se pudo leer la variable FIREBASE_SERVICE_ACCOUNT:", e);
     process.exit(1);
   }
 } else {
   try {
     serviceAccount = require(path.join(__dirname, "serviceAccountKey.json"));
   } catch (e) {
-    console.error("❌ No se pudo leer el archivo serviceAccountKey.json");
+    console.error("❌ No se pudo leer el archivo serviceAccountKey.json:", e);
     process.exit(1);
   }
 }
 
+// Inicializar Firebase
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
-console.log("✅ Firebase inicializado correctamente en Render");
+console.log("✅ Firebase inicializado correctamente en Render.");
 
+// Inicializar Express
 const app = express();
 app.use(bodyParser.json());
 
-// Función para asegurar que un documento exista
+// ----------------------
+// 🔹 Función auxiliar
+// ----------------------
 async function asegurarDocumento(collection, docId, datosIniciales) {
   const ref = db.collection(collection).doc(docId);
   const snap = await ref.get();
@@ -42,7 +51,9 @@ async function asegurarDocumento(collection, docId, datosIniciales) {
   return snap.data();
 }
 
-// Endpoint demo-payment
+// ----------------------
+// 💳 Endpoint demo-payment
+// ----------------------
 app.post('/api/demo-payment', async (req, res) => {
   try {
     const { usuarioId, creadorId, postId, precio } = req.body;
@@ -63,22 +74,27 @@ app.post('/api/demo-payment', async (req, res) => {
 
     // Actualizar saldo del creador
     const nuevoSaldo = (creadorData.saldo || 0) + precio;
-    await db.collection('usuarios').doc(creadorId).set({ saldo: nuevoSaldo });
+    await db.collection('usuarios').doc(creadorId).set({ saldo: nuevoSaldo }, { merge: true });
 
-    res.json({ success: true, mensaje: 'Compra registrada correctamente' });
+    res.json({ success: true, mensaje: 'Compra registrada correctamente (modo demo)' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Servir frontend estático
+// ----------------------
+// 📦 Servir frontend
+// ----------------------
 app.use(express.static(path.join(__dirname, "../dist")));
 
-// RUTA COMODÍN arreglada para Express 5
-app.get("/*", (req, res) => {
+// Middleware comodín: redirige cualquier ruta desconocida a index.html
+app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, "../dist/index.html"));
 });
 
+// ----------------------
+// 🚀 Iniciar servidor
+// ----------------------
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`💻 Backend LovePlay (Demo) corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`💻 Backend LovePlay (Deploy Render) corriendo en puerto ${PORT}`));
